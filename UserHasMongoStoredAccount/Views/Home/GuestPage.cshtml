@@ -1,0 +1,17 @@
+﻿
+@{
+    ViewData["Title"] = "GuestPage";
+}
+
+<h1>Guest Page</h1>
+
+<p>Hi welcome to the Guest page, which doesn't require you to be logged in.</p>
+
+@if (User.Identity.IsAuthenticated)
+{
+    <p>You are logged in as @User.Identity.Name.</p>
+} else
+{
+    <p>You are not logged in.</p>
+}
+

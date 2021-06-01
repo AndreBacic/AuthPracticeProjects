@@ -1,0 +1,10 @@
+﻿@using System.Security.Claims;
+@{
+    ViewData["Title"] = "Private Page";
+}
+<h1>@ViewData["Title"]</h1>
+
+<h2>Greetings, @User.Identity.Name!</h2>
+
+<p>Your User Type: @User.GetType()</p>
+<p>User role: @User.Claims.Where(c => c.Type == ClaimTypes.Role).First().Value</p>
