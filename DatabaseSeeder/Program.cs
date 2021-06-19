@@ -13,8 +13,24 @@ namespace DatabaseSeeder
         {
             //CreatePerson();
 
-            HashPlaintextUserPasswords();
+            //HashPlaintextUserPasswords();
 
+            CompareHashing();
+
+        }
+        private static void CompareHashing()
+        {
+            string password = "Yeet!";
+            var hashSalt1 = HashAndSalter.HashAndSalt(password);
+
+            string hash1 = hashSalt1.hashedPassword;
+            string salt1 = Convert.ToBase64String(hashSalt1.salt);
+
+            (bool isSamePassword1, bool NeedsUpgrade) = HashAndSalter.PasswordEqualsHash("Yeet!", hash1, salt1);
+            (bool isSamePassword2, bool NeedsUpgrade2) = HashAndSalter.PasswordEqualsHashNormal("Yeet!", hash1, salt1);
+
+            Console.WriteLine(isSamePassword1.ToString());
+            Console.WriteLine(isSamePassword2.ToString());
         }
 
         private static void HashPlaintextUserPasswords()

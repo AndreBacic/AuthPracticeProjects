@@ -66,7 +66,26 @@ namespace AuthPracticeLibrary
             bool passwordEqualsHash = (hashedPassword == hash);
             bool needsUpgrade = (iterations != Iterations);
             return (passwordEqualsHash, iterationsNeedsUpgrade: needsUpgrade);
-        }       
+        }
+        public static (bool, bool iterationsNeedsUpgrade) PasswordEqualsHashNormal(string password, string hash, string salt, int iterations = -1)
+        {
+            if (iterations <= 0)
+            {
+                iterations = Iterations;
+            }
+            byte[] byteSalt = Convert.FromBase64String(salt);
+
+            string hashedPassword = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+                password: password,
+                salt: byteSalt,
+                prf: KeyDerivationPrf.HMACSHA512,
+                iterationCount: iterations,
+                numBytesRequested: 32));
+
+            bool passwordEqualsHash = (hashedPassword == hash);
+            bool needsUpgrade = (iterations != Iterations);
+            return (passwordEqualsHash, iterationsNeedsUpgrade: needsUpgrade);
+        }
 
         /// <summary>
         /// Returns the parameters combined in a string ready for being put in a database.
