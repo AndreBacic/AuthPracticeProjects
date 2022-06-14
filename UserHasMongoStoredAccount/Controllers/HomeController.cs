@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using AuthPracticeLibrary;
+﻿using AuthPracticeLibrary;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Security.Claims;
 using UserHasMongoStoredAccount.Models;
 
 namespace UserHasMongoStoredAccount.Controllers
@@ -17,11 +15,15 @@ namespace UserHasMongoStoredAccount.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly MongoCRUD _db;
+        private readonly IHashAndSalter _hashAndSalter;
 
-        public HomeController(ILogger<HomeController> logger, MongoCRUD db)
+        public HomeController(ILogger<HomeController> logger, 
+                              MongoCRUD db, 
+                              IHashAndSalter hashAndSalter)
         {
             _logger = logger;
             _db = db;
+            _hashAndSalter = hashAndSalter;
         }
 
         public IActionResult Index()
@@ -34,47 +36,45 @@ namespace UserHasMongoStoredAccount.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Index(string username, string password)
         {
+            PersonModel person;
             try
             {
-                PersonModel person = _db.LoadRecords<PersonModel>("Users")
+                person = _db.LoadRecords<PersonModel>("Users")
                     .Where(p => p.FirstName == username).First();
-
-                string[] splitHash = person.PasswordHash.Split('.');
-                int iterations = int.Parse(splitHash[0]);
-                (bool IsPasswordCorrect, bool needsUpgrade) = HashAndSalter.PasswordEqualsHash(password, splitHash[2], splitHash[1], iterations);
-
-                if (IsPasswordCorrect)
-                {
-
-                    List<Claim> personClaims = new List<Claim>()
-                    {
-                        new Claim(ClaimTypes.Name, person.FirstName),
-                        new Claim(ClaimTypes.Role, person.PersonRole)
-                    };
-
-                    List<ClaimsIdentity> claimsIdentities = new List<ClaimsIdentity>()
-                    {
-                        new ClaimsIdentity(personClaims, "Hi more test strings")
-                    };
-
-                    ClaimsPrincipal multiClaimIdentityContainerThing = new ClaimsPrincipal(claimsIdentities);
-
-                    HttpContext.SignInAsync(multiClaimIdentityContainerThing);
-
-                    return RedirectToAction(nameof(GuestPage));
-                } 
-                else
-                {
-                    throw new FormatException("Incorrect password hash storage format");
-                }
             }
             catch
             {
                 return View();
             }
+            string[] splitHash = person.PasswordHash.Split('.');
+            int iterations = int.Parse(splitHash[0]);
+            (bool IsPasswordCorrect, bool needsUpgrade) = _hashAndSalter.PasswordEqualsHash(password, splitHash[2], splitHash[1], iterations);
+
+            if (IsPasswordCorrect == false)
+            {
+                return View();
+            }
+
+            List<Claim> personClaims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.Name, person.FirstName),
+                new Claim(ClaimTypes.Role, person.PersonRole)
+            };
+
+            List<ClaimsIdentity> claimsIdentities = new List<ClaimsIdentity>()
+            {
+                new ClaimsIdentity(personClaims, "Hi more test strings")
+            };
+
+            ClaimsPrincipal multiClaimIdentityContainerThing = new ClaimsPrincipal(claimsIdentities);
+
+            HttpContext.SignInAsync(multiClaimIdentityContainerThing);
+
+            return RedirectToAction(nameof(GuestPage));
+
         }
 
-        [Authorize(Policy="Test Policy")]
+        [Authorize(Policy = "Test Policy")]
         public IActionResult Privacy()
         {
             return View();

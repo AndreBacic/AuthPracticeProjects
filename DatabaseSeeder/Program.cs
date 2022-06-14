@@ -1,15 +1,14 @@
 ﻿using AuthPracticeLibrary;
 using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 
 namespace DatabaseSeeder
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             //CreatePerson();
 
@@ -20,21 +19,20 @@ namespace DatabaseSeeder
         }
         private static void CompareHashing()
         {
+            IHashAndSalter hashAndSalter = new PBKDF2_HashAndSalter();
             string password = "Yeet!";
-            var hashSalt1 = HashAndSalter.HashAndSalt(password);
+            var hashSalt1 = hashAndSalter.HashAndSalt(password);
 
-            string hash1 = hashSalt1.hashedPassword;
-            string salt1 = Convert.ToBase64String(hashSalt1.salt);
-
-            (bool isSamePassword1, bool NeedsUpgrade) = HashAndSalter.PasswordEqualsHash("Yeet!", hash1, salt1);
-            (bool isSamePassword2, bool NeedsUpgrade2) = HashAndSalter.PasswordEqualsHashNormal("Yeet!", hash1, salt1);
+            string hash1 = hashSalt1.PasswordHashString;
+            string salt1 = hashSalt1.SaltString;
+            (bool isSamePassword1, _) = hashAndSalter.PasswordEqualsHash("Yeet!", hash1, salt1);
 
             Console.WriteLine(isSamePassword1.ToString());
-            Console.WriteLine(isSamePassword2.ToString());
         }
 
         private static void HashPlaintextUserPasswords()
         {
+            IHashAndSalter hashAndSalter = new PBKDF2_HashAndSalter();
             MongoCRUD db = new MongoCRUD("AuthPracticeDB");
 
             var people = db.LoadRecords<PersonModel>("Users");
@@ -46,9 +44,7 @@ namespace DatabaseSeeder
                 {
                     continue; // if there is the required "iterations.salt.passwordHash", we don't need to hash the password
                 }
-                var hashSalt = HashAndSalter.HashAndSalt(person.PasswordHash);
-                //person.PasswordHash = $"{HashAndSalter.Iterations}.{Convert.ToBase64String(hashSalt.salt)}.{hashSalt.hashedPassword}";
-                person.PasswordHash = HashAndSalter.Combine(hashSalt.hashedPassword, hashSalt.salt);
+                person.PasswordHash = hashAndSalter.HashAndSalt(person.PasswordHash).ToDbString();
                 db.UpsertRecord("Users", person.Id, person);
             }
         }
@@ -67,7 +63,7 @@ namespace DatabaseSeeder
             db.InsertRecord("Users", dude);
         }
 
-        
+
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Source for PasswordHasher and HashingOptions code: https://medium.com/dealeron-dev/storing-passwords-in-net-core-3de29a3da4d2

@@ -4,9 +4,9 @@ using System;
 
 namespace AuthPracticeLibrary
 {
-    public class PersonModel 
-    { 
-    
+    public class PersonModel
+    {
+
         [BsonId] // mongo _id
         public Guid Id { get; set; }
         public string FirstName { get; set; }

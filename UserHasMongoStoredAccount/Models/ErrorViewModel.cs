@@ -1,5 +1,3 @@
-using System;
-
 namespace UserHasMongoStoredAccount.Models
 {
     public class ErrorViewModel
